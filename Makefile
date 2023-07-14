@@ -6,4 +6,4 @@ check:
 
 .PHONY: install
 install: check
-	sudo install --group "root:root" --mode "+x" chatgpt.sh /usr/local/bin/chatgpt
+	sudo install --owner "root" --group "root" --mode "+x" chatgpt.sh /usr/local/bin/chatgpt
