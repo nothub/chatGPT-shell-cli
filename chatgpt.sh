@@ -12,15 +12,17 @@ CHATGPT_CYAN_LABEL="\033[36mchatgpt \033[0m"
 PROCESSING_LABEL="\n\033[90mProcessing... \033[0m\033[0K\r"
 OVERWRITE_PROCESSING_LINE="             \033[0K\r"
 
-if [[ -z "$OPENAI_KEY" ]]; then
-	echo "You need to set your OPENAI_KEY to use this script"
-	echo "You can set it temporarily by running this on your terminal: export OPENAI_KEY=YOUR_KEY_HERE"
+API_KEY="${OPENAI_API_KEY:-${OPENAI_KEY}}"
+
+if [[ -z "$API_KEY" ]]; then
+	echo "You need to set environment variable \$OPENAI_API_KEY to use this script!"
+	echo "You can set it temporarily by running this in your terminal: export OPENAI_API_KEY=\"<YOUR_KEY_HERE>\""
 	exit 1
 fi
 
 usage() {
 	cat <<EOF
-A simple, lightweight shell script to use OpenAI's Language Models and DALL-E from the terminal without installing Python or Node.js. Open Source and written in 100% Shell (Bash) 
+A simple, lightweight shell script to use OpenAI's Language Models and DALL-E from the terminal without installing Python or Node.js. Open Source and written in 100% Shell (Bash)
 
 https://github.com/0xacx/chatGPT-shell-cli/
 
@@ -31,8 +33,8 @@ Commands:
   history - To view your chat history
   models - To get a list of the models available at OpenAI API
   model: - To view all the information on a specific model, start a prompt with model: and the model id as it appears in the list of models. For example: "model:text-babbage:001" will get you all the fields for text-babbage:001 model
-  command: - To get a command with the specified functionality and run it, just type "command:" and explain what you want to achieve. The script will always ask you if you want to execute the command. i.e. 
-  "command: show me all files in this directory that have more than 150 lines of code" 
+  command: - To get a command with the specified functionality and run it, just type "command:" and explain what you want to achieve. The script will always ask you if you want to execute the command. i.e.
+  "command: show me all files in this directory that have more than 150 lines of code"
   *If a command modifies your file system or dowloads external files the script will show a warning before executing.
 
 Options:
@@ -83,7 +85,7 @@ handle_error() {
 list_models() {
 	models_response=$(curl https://api.openai.com/v1/models \
 		-sS \
-		-H "Authorization: Bearer $OPENAI_KEY")
+		-H "Authorization: Bearer $API_KEY")
 	handle_error "$models_response"
 	models_data=$(echo $models_response | jq -r -C '.data[] | {id, owned_by, created}')
 	echo -e "$OVERWRITE_PROCESSING_LINE"
@@ -97,7 +99,7 @@ request_to_completions() {
 	curl https://api.openai.com/v1/completions \
 		-sS \
 		-H 'Content-Type: application/json' \
-		-H "Authorization: Bearer $OPENAI_KEY" \
+		-H "Authorization: Bearer $API_KEY" \
 		-d '{
   			"model": "'"$MODEL"'",
   			"prompt": "'"$prompt"'",
@@ -113,7 +115,7 @@ request_to_image() {
 	image_response=$(curl https://api.openai.com/v1/images/generations \
 		-sS \
 		-H 'Content-Type: application/json' \
-		-H "Authorization: Bearer $OPENAI_KEY" \
+		-H "Authorization: Bearer $API_KEY" \
 		-d '{
     		"prompt": "'"${prompt#*image:}"'",
     		"n": 1,
@@ -126,11 +128,11 @@ request_to_image() {
 request_to_chat() {
 	local message="$1"
 	escaped_system_prompt=$(escape "$SYSTEM_PROMPT")
-	
+
 	curl https://api.openai.com/v1/chat/completions \
 		-sS \
 		-H 'Content-Type: application/json' \
-		-H "Authorization: Bearer $OPENAI_KEY" \
+		-H "Authorization: Bearer $API_KEY" \
 		-d '{
             "model": "'"$MODEL"'",
             "messages": [
@@ -369,7 +371,7 @@ while $running; do
 	elif [[ "$prompt" =~ ^model: ]]; then
 		models_response=$(curl https://api.openai.com/v1/models \
 			-sS \
-			-H "Authorization: Bearer $OPENAI_KEY")
+			-H "Authorization: Bearer $API_KEY")
 		handle_error "$models_response"
 		model_data=$(echo $models_response | jq -r -C '.data[] | select(.id=="'"${prompt#*model:}"'")')
 		echo -e "$OVERWRITE_PROCESSING_LINE"
